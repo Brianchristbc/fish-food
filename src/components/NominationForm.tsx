@@ -44,7 +44,7 @@ export default function NominationForm({ onNominated }: Props) {
         </h2>
       </div>
       <p className="mb-4 text-sm text-slate-500">
-        Paste an Amazon product URL (max $49.98). Our fish will swim over and fetch the details.
+        Paste an Amazon product URL (max $49.98). Our TinyFish web agent will swim over and fetch the details.
       </p>
       <form onSubmit={handleSubmit} className="flex gap-2">
         <input

@@ -308,7 +308,7 @@ export default function Dashboard({ user, onLogout }: Props) {
                 : "border-orange-200 bg-orange-50 text-orange-700"
             }`}>
               {data.userNomination.status === "PENDING" && (
-                <>Our fish is swimming to Amazon to check your product... hang tight!</>
+                <>Our TinyFish web agent is swimming to Amazon to check your product... hang tight!</>
               )}
               {data.userNomination.status === "FAILED" && (
                 <>Nomination failed: {data.userNomination.errorMsg}</>
