@@ -3,54 +3,35 @@ import { prisma } from "./db";
 // All week bounds are in America/Los_Angeles (Pacific Time)
 const TZ = "America/Los_Angeles";
 
-function getDateInTZ(date: Date): { year: number; month: number; day: number; hour: number; dayOfWeek: number } {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: TZ,
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    hour: "numeric",
-    hour12: false,
-    weekday: "short",
-  }).formatToParts(date);
-
-  const get = (type: string) => parts.find((p) => p.type === type)?.value || "";
-  const dayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-
-  return {
-    year: parseInt(get("year")),
-    month: parseInt(get("month")),
-    day: parseInt(get("day")),
-    hour: parseInt(get("hour")),
-    dayOfWeek: dayMap[get("weekday")] ?? 0,
-  };
+// Get the current time components in Pacific Time
+function nowInPT() {
+  const now = new Date();
+  const str = now.toLocaleString("en-US", { timeZone: TZ, hour12: false });
+  // str is like "3/6/2026, 13:29:14"
+  const [datePart, timePart] = str.split(", ");
+  const [month, day, year] = datePart.split("/").map(Number);
+  const [hour, minute] = timePart.split(":").map(Number);
+  const dayOfWeek = new Date(now.toLocaleString("en-US", { timeZone: TZ })).getDay();
+  return { year, month, day, hour, minute, dayOfWeek, utcNow: now };
 }
 
-function makeDateInTZ(year: number, month: number, day: number, hour: number, minute: number): Date {
-  // Create a date string in the target timezone and let the engine parse it
-  const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`;
-  // Use a temporary formatter to figure out the UTC offset
-  const tempDate = new Date(dateStr + "Z"); // treat as UTC first
-  const utcStr = tempDate.toLocaleString("en-US", { timeZone: "UTC" });
-  const tzStr = tempDate.toLocaleString("en-US", { timeZone: TZ });
-  const utcTime = new Date(utcStr).getTime();
-  const tzTime = new Date(tzStr).getTime();
-  const offset = utcTime - tzTime;
-  return new Date(new Date(dateStr).getTime() + offset);
+// Create a UTC Date that represents a specific PT time
+function ptToUTC(year: number, month: number, day: number, hour: number, minute: number): Date {
+  // Create two dates and compare to find the offset
+  const fakeUTC = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
+  const utcStr = fakeUTC.toLocaleString("en-US", { timeZone: "UTC" });
+  const ptStr = fakeUTC.toLocaleString("en-US", { timeZone: TZ });
+  const diff = new Date(utcStr).getTime() - new Date(ptStr).getTime();
+  return new Date(fakeUTC.getTime() + diff);
 }
 
-function getWeekBounds(date: Date) {
-  const tz = getDateInTZ(date);
-  const dayOfWeek = tz.dayOfWeek;
-  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+function getWeekBounds(now: Date) {
+  const pt = nowInPT();
+  const diffToMonday = pt.dayOfWeek === 0 ? -6 : 1 - pt.dayOfWeek;
 
-  // Get Monday's date
-  const mondayDate = new Date(date);
-  mondayDate.setDate(mondayDate.getDate() + diffToMonday);
-  const mondayTZ = getDateInTZ(mondayDate);
-
-  const monday = makeDateInTZ(mondayTZ.year, mondayTZ.month, mondayTZ.day, 9, 0); // Mon 9am PT
-  const friday = makeDateInTZ(mondayTZ.year, mondayTZ.month, mondayTZ.day + 4, 16, 50); // Fri 4:50pm PT
+  const mondayDay = pt.day + diffToMonday;
+  const monday = ptToUTC(pt.year, pt.month, mondayDay, 9, 0);     // Mon 9:00am PT
+  const friday = ptToUTC(pt.year, pt.month, mondayDay + 4, 16, 50); // Fri 4:50pm PT
 
   return { monday, friday };
 }
