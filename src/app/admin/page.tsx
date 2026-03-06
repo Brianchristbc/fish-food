@@ -22,15 +22,21 @@ interface WeekInfo {
   nominations: NominationInfo[];
 }
 
+const OFFICES = [
+  { value: "US", label: "US", flag: "🇺🇸" },
+  { value: "VN", label: "Vietnam", flag: "🇻🇳" },
+];
+
 export default function AdminPage() {
   const [weeks, setWeeks] = useState<WeekInfo[]>([]);
+  const [office, setOffice] = useState("US");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [creatingNew, setCreatingNew] = useState(false);
 
   const refresh = useCallback(async () => {
-    const res = await fetch("/api/admin/weeks");
+    const res = await fetch(`/api/admin/weeks?office=${office}`);
     if (res.status === 403) {
       setError("unauthorized");
       setLoading(false);
@@ -39,9 +45,10 @@ export default function AdminPage() {
     const data = await res.json();
     setWeeks(data.weeks || []);
     setLoading(false);
-  }, []);
+  }, [office]);
 
   useEffect(() => {
+    setLoading(true);
     refresh();
   }, [refresh]);
 
@@ -94,6 +101,23 @@ export default function AdminPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/fish.png" alt="" className="h-8 w-8" />
           <h1 className="text-2xl font-bold text-slate-900">Admin Panel</h1>
+
+          {/* Office selector */}
+          <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
+            {OFFICES.map((o) => (
+              <button
+                key={o.value}
+                onClick={() => setOffice(o.value)}
+                className={`rounded-md px-3 py-1 text-sm font-medium transition ${
+                  office === o.value
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {o.flag} {o.label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -157,7 +181,7 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Nominations list (collapsed if empty) */}
+              {/* Nominations list */}
               {week.nominations.length > 0 && (
                 <div className="px-5 py-3">
                   <div className="space-y-1.5">
@@ -191,7 +215,7 @@ export default function AdminPage() {
 
         {weeks.length === 0 && (
           <div className="text-center py-12 text-slate-400">
-            No weeks yet. Click &quot;+ New Week&quot; to create one.
+            No weeks yet for {OFFICES.find((o) => o.value === office)?.label}. Click &quot;+ New Week&quot; to create one.
           </div>
         )}
       </div>
