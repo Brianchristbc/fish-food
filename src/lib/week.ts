@@ -1,17 +1,56 @@
 import { prisma } from "./db";
 
+// All week bounds are in America/Los_Angeles (Pacific Time)
+const TZ = "America/Los_Angeles";
+
+function getDateInTZ(date: Date): { year: number; month: number; day: number; hour: number; dayOfWeek: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: TZ,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    hour12: false,
+    weekday: "short",
+  }).formatToParts(date);
+
+  const get = (type: string) => parts.find((p) => p.type === type)?.value || "";
+  const dayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+
+  return {
+    year: parseInt(get("year")),
+    month: parseInt(get("month")),
+    day: parseInt(get("day")),
+    hour: parseInt(get("hour")),
+    dayOfWeek: dayMap[get("weekday")] ?? 0,
+  };
+}
+
+function makeDateInTZ(year: number, month: number, day: number, hour: number, minute: number): Date {
+  // Create a date string in the target timezone and let the engine parse it
+  const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`;
+  // Use a temporary formatter to figure out the UTC offset
+  const tempDate = new Date(dateStr + "Z"); // treat as UTC first
+  const utcStr = tempDate.toLocaleString("en-US", { timeZone: "UTC" });
+  const tzStr = tempDate.toLocaleString("en-US", { timeZone: TZ });
+  const utcTime = new Date(utcStr).getTime();
+  const tzTime = new Date(tzStr).getTime();
+  const offset = utcTime - tzTime;
+  return new Date(new Date(dateStr).getTime() + offset);
+}
+
 function getWeekBounds(date: Date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const tz = getDateInTZ(date);
+  const dayOfWeek = tz.dayOfWeek;
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
 
-  const monday = new Date(d);
-  monday.setDate(d.getDate() + diffToMonday);
-  monday.setHours(9, 0, 0, 0);
+  // Get Monday's date
+  const mondayDate = new Date(date);
+  mondayDate.setDate(mondayDate.getDate() + diffToMonday);
+  const mondayTZ = getDateInTZ(mondayDate);
 
-  const friday = new Date(monday);
-  friday.setDate(monday.getDate() + 4);
-  friday.setHours(16, 50, 0, 0);
+  const monday = makeDateInTZ(mondayTZ.year, mondayTZ.month, mondayTZ.day, 9, 0); // Mon 9am PT
+  const friday = makeDateInTZ(mondayTZ.year, mondayTZ.month, mondayTZ.day + 4, 16, 50); // Fri 4:50pm PT
 
   return { monday, friday };
 }
@@ -26,14 +65,12 @@ function getISOWeek(date: Date): { weekNumber: number; year: number } {
 }
 
 export async function getCurrentWeek(office: string = "US") {
-  // First check if there's an open week (covers test weeks too)
   const openWeek = await prisma.week.findFirst({
     where: { office, status: "OPEN" },
     orderBy: [{ year: "desc" }, { weekNumber: "desc" }],
   });
 
   if (openWeek) {
-    // Auto-close if past real deadline
     const now = new Date();
     if (now > new Date(openWeek.endsAt)) {
       return await prisma.week.update({
@@ -44,7 +81,6 @@ export async function getCurrentWeek(office: string = "US") {
     return openWeek;
   }
 
-  // No open week — create one for the current calendar week
   const now = new Date();
   const { weekNumber, year } = getISOWeek(now);
   const { monday, friday } = getWeekBounds(now);
@@ -54,7 +90,6 @@ export async function getCurrentWeek(office: string = "US") {
   });
 
   if (existing) {
-    // Already closed for this calendar week; return it as-is
     return existing;
   }
 
@@ -71,7 +106,6 @@ export async function getCurrentWeek(office: string = "US") {
 }
 
 export async function getLastWeekWinner(office: string = "US") {
-  // Find the most recently closed week with a winner (works for both real and test weeks)
   const lastWeek = await prisma.week.findFirst({
     where: {
       office,
