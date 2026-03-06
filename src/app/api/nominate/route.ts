@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
   const week = await getCurrentWeek(office);
 
-  if (!isNominationOpen(week.status)) {
+  if (!isNominationOpen(week.status, office)) {
     return NextResponse.json({ error: "Nominations are closed for this week" }, { status: 400 });
   }
 

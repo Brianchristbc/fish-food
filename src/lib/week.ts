@@ -1,37 +1,41 @@
 import { prisma } from "./db";
 
-// All week bounds are in America/Los_Angeles (Pacific Time)
-const TZ = "America/Los_Angeles";
+const OFFICE_TIMEZONES: Record<string, string> = {
+  US: "America/Los_Angeles",
+  VN: "Asia/Ho_Chi_Minh",
+  CN: "Asia/Shanghai",
+};
 
-// Get the current time components in Pacific Time
-function nowInPT() {
+function getTZ(office: string): string {
+  return OFFICE_TIMEZONES[office] || "America/Los_Angeles";
+}
+
+function nowInTZ(tz: string) {
   const now = new Date();
-  const str = now.toLocaleString("en-US", { timeZone: TZ, hour12: false });
-  // str is like "3/6/2026, 13:29:14"
+  const str = now.toLocaleString("en-US", { timeZone: tz, hour12: false });
   const [datePart, timePart] = str.split(", ");
   const [month, day, year] = datePart.split("/").map(Number);
   const [hour, minute] = timePart.split(":").map(Number);
-  const dayOfWeek = new Date(now.toLocaleString("en-US", { timeZone: TZ })).getDay();
-  return { year, month, day, hour, minute, dayOfWeek, utcNow: now };
+  const dayOfWeek = new Date(now.toLocaleString("en-US", { timeZone: tz })).getDay();
+  return { year, month, day, hour, minute, dayOfWeek };
 }
 
-// Create a UTC Date that represents a specific PT time
-function ptToUTC(year: number, month: number, day: number, hour: number, minute: number): Date {
-  // Create two dates and compare to find the offset
+function localToUTC(tz: string, year: number, month: number, day: number, hour: number, minute: number): Date {
   const fakeUTC = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
   const utcStr = fakeUTC.toLocaleString("en-US", { timeZone: "UTC" });
-  const ptStr = fakeUTC.toLocaleString("en-US", { timeZone: TZ });
-  const diff = new Date(utcStr).getTime() - new Date(ptStr).getTime();
+  const tzStr = fakeUTC.toLocaleString("en-US", { timeZone: tz });
+  const diff = new Date(utcStr).getTime() - new Date(tzStr).getTime();
   return new Date(fakeUTC.getTime() + diff);
 }
 
-function getWeekBounds(now: Date) {
-  const pt = nowInPT();
-  const diffToMonday = pt.dayOfWeek === 0 ? -6 : 1 - pt.dayOfWeek;
+function getWeekBounds(office: string) {
+  const tz = getTZ(office);
+  const local = nowInTZ(tz);
+  const diffToMonday = local.dayOfWeek === 0 ? -6 : 1 - local.dayOfWeek;
+  const mondayDay = local.day + diffToMonday;
 
-  const mondayDay = pt.day + diffToMonday;
-  const monday = ptToUTC(pt.year, pt.month, mondayDay, 9, 0);     // Mon 9:00am PT
-  const friday = ptToUTC(pt.year, pt.month, mondayDay + 4, 16, 50); // Fri 4:50pm PT
+  const monday = localToUTC(tz, local.year, local.month, mondayDay, 9, 0);       // Mon 9:00am local
+  const friday = localToUTC(tz, local.year, local.month, mondayDay + 4, 16, 50);  // Fri 4:50pm local
 
   return { monday, friday };
 }
@@ -64,7 +68,7 @@ export async function getCurrentWeek(office: string = "US") {
 
   const now = new Date();
   const { weekNumber, year } = getISOWeek(now);
-  const { monday, friday } = getWeekBounds(now);
+  const { monday, friday } = getWeekBounds(office);
 
   const existing = await prisma.week.findUnique({
     where: { weekNumber_year_office: { weekNumber, year, office } },
@@ -104,9 +108,9 @@ export async function getLastWeekWinner(office: string = "US") {
   return lastWeek.nominations.find((n) => n.id === lastWeek.winningNominationId) || null;
 }
 
-export function isNominationOpen(weekStatus: string): boolean {
+export function isNominationOpen(weekStatus: string, office: string = "US"): boolean {
   if (weekStatus !== "OPEN") return false;
   const now = new Date();
-  const { monday, friday } = getWeekBounds(now);
+  const { monday, friday } = getWeekBounds(office);
   return now >= monday && now <= friday;
 }
