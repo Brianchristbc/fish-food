@@ -3,7 +3,6 @@ import { prisma } from "./db";
 const OFFICE_TIMEZONES: Record<string, string> = {
   US: "America/Los_Angeles",
   VN: "Asia/Ho_Chi_Minh",
-  CN: "Asia/Shanghai",
 };
 
 function getTZ(office: string): string {

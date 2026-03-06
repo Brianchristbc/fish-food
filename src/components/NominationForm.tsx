@@ -38,7 +38,7 @@ export default function NominationForm({ onNominated }: Props) {
     <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-center gap-2 mb-1">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/fish.png" alt="" className="h-5 w-5" />
+        <img src="/brand/logo.png" alt="" className="h-5" />
         <h2 className="text-base font-semibold text-slate-900">
           Nominate an item
         </h2>

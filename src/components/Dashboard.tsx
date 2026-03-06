@@ -58,9 +58,8 @@ interface Props {
 }
 
 const OFFICES = [
-  { value: "US", label: "US", flag: "🇺🇸" },
-  { value: "VN", label: "Vietnam", flag: "🇻🇳" },
-  { value: "CN", label: "China", flag: "🇨🇳" },
+  { value: "US", label: "US", flag: "🇺🇸", tz: "PT" },
+  { value: "VN", label: "Vietnam", flag: "🇻🇳", tz: "GMT+7" },
 ];
 
 const EMPTY_ILLUSTRATIONS = [
@@ -283,7 +282,8 @@ export default function Dashboard({ user, onLogout }: Props) {
               )}
               <div className="text-sm text-slate-500">
                 Deadline: {deadline.toLocaleDateString("en-US", { weekday: "short" })}{" "}
-                {deadline.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                {deadline.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}{" "}
+                ({OFFICES.find((o) => o.value === viewOffice)?.tz || "PT"})
               </div>
             </div>
           </div>

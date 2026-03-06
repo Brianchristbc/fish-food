@@ -17,7 +17,6 @@ interface Props {
 const OFFICES = [
   { value: "US", label: "United States", flag: "🇺🇸" },
   { value: "VN", label: "Vietnam", flag: "🇻🇳" },
-  { value: "CN", label: "China", flag: "🇨🇳" },
 ];
 
 export default function NameSetup({ user, onNameSet }: Props) {
