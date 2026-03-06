@@ -36,13 +36,9 @@ export default function NominationForm({ onNominated }: Props) {
 
   return (
     <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center gap-2 mb-1">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/logo.png" alt="" className="h-5" />
-        <h2 className="text-base font-semibold text-slate-900">
-          Nominate an item
-        </h2>
-      </div>
+      <h2 className="text-base font-semibold text-slate-900 mb-1">
+        Nominate an item
+      </h2>
       <p className="mb-4 text-sm text-slate-500">
         Paste an Amazon product URL (max $49.98). Our TinyFish web agent will swim over and fetch the details.
       </p>

@@ -199,11 +199,12 @@ export default function Dashboard({ user, onLogout }: Props) {
       {/* Viewing other office banner */}
       {!isOwnOffice && (
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center text-sm text-amber-700">
-          Viewing {OFFICES.find((o) => o.value === viewOffice)?.label} office — switch to{" "}
+          Viewing {OFFICES.find((o) => o.value === viewOffice)?.label} office ({OFFICES.find((o) => o.value === viewOffice)?.tz})
+          {!data.isOpen && " — this week is closed in their timezone"}
+          {" — "}
           <button onClick={() => setViewOffice(user.office)} className="font-medium underline">
-            your office ({user.office})
-          </button>{" "}
-          to nominate & vote
+            switch to your office ({user.office})
+          </button>
         </div>
       )}
 
