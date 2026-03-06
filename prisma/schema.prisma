@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          String       @id @default(cuid())
+  email       String       @unique
+  name        String?
+  office      String       @default("US")
+  createdAt   DateTime     @default(now())
+  nominations Nomination[]
+  votes       Vote[]
+}
+
+model AuthCode {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Week {
+  id                  String       @id @default(cuid())
+  weekNumber          Int
+  year                Int
+  office              String       @default("US")
+  startsAt            DateTime
+  endsAt              DateTime
+  status              String       @default("OPEN")
+  winningNominationId String?
+  nominations         Nomination[]
+  votes               Vote[]
+
+  @@unique([weekNumber, year, office])
+}
+
+model Nomination {
+  id          String   @id @default(cuid())
+  userId      String
+  weekId      String
+  amazonUrl   String
+  asin        String   @default("")
+  productName String   @default("")
+  price       Float    @default(0)
+  imageUrl    String   @default("")
+  status      String   @default("PENDING") // PENDING, READY, FAILED
+  errorMsg    String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+  week        Week     @relation(fields: [weekId], references: [id])
+  votes       Vote[]
+
+  @@unique([userId, weekId])
+}
+
+model Vote {
+  id           String     @id @default(cuid())
+  userId       String
+  nominationId String
+  weekId       String
+  isAutoVote   Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  user         User       @relation(fields: [userId], references: [id])
+  nomination   Nomination @relation(fields: [nominationId], references: [id])
+  week         Week       @relation(fields: [weekId], references: [id])
+
+  @@unique([userId, nominationId])
+}
