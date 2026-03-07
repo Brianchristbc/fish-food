@@ -6,6 +6,7 @@ import ItemCard from "./ItemCard";
 import PastResults from "./PastResults";
 import SlackRally from "./SlackRally";
 import ProfileModal from "./ProfileModal";
+import FakeCaptcha from "./FakeCaptcha";
 
 interface User {
   id: string;
@@ -403,28 +404,22 @@ export default function Dashboard({ user, onLogout }: Props) {
             </div>
           )}
 
-          {/* Pending nominations */}
+          {/* Pending nominations — show fake captcha while waiting */}
           {pendingNominations.length > 0 && (
-            <div className="mb-4 space-y-2">
-              {pendingNominations.map((nom) => (
-                <div
-                  key={nom.id}
-                  className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-                >
-                  <div className="h-20 w-20 rounded-lg bg-orange-50 flex items-center justify-center">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/brand/fish.png" alt="" className="h-8 w-8 animate-bounce" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-500">
-                      Fetching product details...
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      by {nom.nominatedBy}
-                    </p>
-                  </div>
+            <div className="mb-4 space-y-4">
+              <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/brand/fish.png" alt="" className="h-8 w-8 animate-bounce shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-orange-700">
+                    Our TinyFish web agent is fetching product details...
+                  </p>
+                  <p className="text-xs text-orange-500">
+                    Complete the security check below while you wait
+                  </p>
                 </div>
-              ))}
+              </div>
+              <FakeCaptcha />
             </div>
           )}
 
