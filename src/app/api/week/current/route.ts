@@ -25,8 +25,9 @@ export async function GET(req: NextRequest) {
     week = await getCurrentWeek(viewOffice);
   }
 
+  // Only return READY and PENDING nominations — hide FAILED from everyone
   const nominations = await prisma.nomination.findMany({
-    where: { weekId: week.id },
+    where: { weekId: week.id, status: { not: "FAILED" } },
     include: {
       user: { select: { email: true, name: true } },
       votes: { select: { userId: true, isAutoVote: true } },

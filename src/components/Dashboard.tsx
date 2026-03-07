@@ -153,7 +153,6 @@ export default function Dashboard({ user, onLogout }: Props) {
   const votesRemaining = 2 - data.userManualVotesUsed;
   const readyNominations = data.nominations.filter((n) => n.status === "READY");
   const pendingNominations = data.nominations.filter((n) => n.status === "PENDING");
-  const failedNominations = data.nominations.filter((n) => n.status === "FAILED");
   const votableItems = readyNominations.filter((n) => data.userNomination?.id !== n.id);
   const isOwnOffice = viewOffice === user.office;
   const isViewingCurrentWeek = !selectedWeekId || selectedWeekId === data.allWeeks[0]?.id;
@@ -434,30 +433,6 @@ export default function Dashboard({ user, onLogout }: Props) {
                 </div>
               </div>
               <FakeCaptcha />
-            </div>
-          )}
-
-          {/* Failed nominations — only show other people's failures, not your own (handled above) */}
-          {failedNominations.filter((n) => data.userNomination?.id !== n.id).length > 0 && (
-            <div className="mb-4 space-y-2">
-              {failedNominations.filter((n) => data.userNomination?.id !== n.id).map((nom) => (
-                <div
-                  key={nom.id}
-                  className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
-                >
-                  <div className="h-20 w-20 rounded-lg bg-red-100 flex items-center justify-center text-red-400 text-2xl">
-                    !
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-red-700">
-                      {nom.errorMsg || "Failed to load"}
-                    </p>
-                    <p className="text-xs text-red-400">
-                      by {nom.nominatedBy}
-                    </p>
-                  </div>
-                </div>
-              ))}
             </div>
           )}
 
