@@ -45,7 +45,12 @@ export async function POST(req: NextRequest) {
     where: { userId_weekId: { userId: session.userId, weekId: week.id } },
   });
   if (existing) {
-    return NextResponse.json({ error: "You already nominated an item this week" }, { status: 400 });
+    if (existing.status === "FAILED") {
+      // Delete the failed nomination so they can retry
+      await prisma.nomination.delete({ where: { id: existing.id } });
+    } else {
+      return NextResponse.json({ error: "You already nominated an item this week" }, { status: 400 });
+    }
   }
 
   // Create nomination in PENDING state — return immediately

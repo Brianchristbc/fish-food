@@ -377,25 +377,27 @@ export default function Dashboard({ user, onLogout }: Props) {
             <SlackRally nominationCount={readyNominations.length} />
           )}
 
-          {/* Nomination form — only on current open week in own office */}
-          {data.isOpen && isOwnOffice && isViewingCurrentWeek && !data.userNomination && (
-            <NominationForm onNominated={refresh} />
+          {/* Nomination form — show when no nomination or failed */}
+          {data.isOpen && isOwnOffice && isViewingCurrentWeek && (!data.userNomination || data.userNomination.status === "FAILED") && (
+            <>
+              {data.userNomination?.status === "FAILED" && (
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  Previous nomination failed: {data.userNomination.errorMsg}. Try a different item below.
+                </div>
+              )}
+              <NominationForm onNominated={refresh} />
+            </>
           )}
 
-          {/* Nomination status */}
-          {data.userNomination && data.isOpen && isOwnOffice && isViewingCurrentWeek && (
+          {/* Nomination status — PENDING or READY */}
+          {data.userNomination && data.userNomination.status !== "FAILED" && data.isOpen && isOwnOffice && isViewingCurrentWeek && (
             <div className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
               data.userNomination.status === "PENDING"
                 ? "border-amber-200 bg-amber-50 text-amber-700"
-                : data.userNomination.status === "FAILED"
-                ? "border-red-200 bg-red-50 text-red-700"
                 : "border-orange-200 bg-orange-50 text-orange-700"
             }`}>
               {data.userNomination.status === "PENDING" && (
                 <>Our TinyFish web agent is swimming to Amazon to check your product... hang tight!</>
-              )}
-              {data.userNomination.status === "FAILED" && (
-                <>Nomination failed: {data.userNomination.errorMsg}</>
               )}
               {data.userNomination.status === "READY" && (
                 <>You nominated: <strong>{data.userNomination.productName}</strong></>
