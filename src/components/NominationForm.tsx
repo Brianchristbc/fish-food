@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import FakeCaptcha from "./FakeCaptcha";
 
 interface Props {
   onNominated: () => void;
@@ -9,6 +10,7 @@ interface Props {
 export default function NominationForm({ onNominated }: Props) {
   const [url, setUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -30,8 +32,40 @@ export default function NominationForm({ onNominated }: Props) {
       return;
     }
 
+    // Show captcha immediately while TFWA works in the background
+    setPending(true);
     setUrl("");
-    onNominated();
+
+    // Poll until the nomination is no longer PENDING
+    const pollInterval = setInterval(async () => {
+      const weekRes = await fetch("/api/week/current");
+      const weekData = await weekRes.json();
+      if (weekData.userNomination?.status !== "PENDING") {
+        clearInterval(pollInterval);
+        setPending(false);
+        onNominated();
+      }
+    }, 3000);
+  }
+
+  if (pending) {
+    return (
+      <div className="mb-6 space-y-4">
+        <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/fish.png" alt="" className="h-8 w-8 animate-bounce shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-orange-700">
+              Our TinyFish web agent is fetching product details...
+            </p>
+            <p className="text-xs text-orange-500">
+              Complete the security check below while you wait
+            </p>
+          </div>
+        </div>
+        <FakeCaptcha />
+      </div>
+    );
   }
 
   return (
