@@ -19,8 +19,16 @@ const OFFICES = [
   { value: "VN", label: "Vietnam", flag: "🇻🇳" },
 ];
 
+function nameFromEmail(email: string): string {
+  // "brianchristian@tinyfish.io" -> "Brian Christian"
+  const local = email.split("@")[0];
+  return local
+    .replace(/[._-]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export default function NameSetup({ user, onNameSet }: Props) {
-  const [name, setName] = useState("");
+  const [name, setName] = useState(nameFromEmail(user.email));
   const [office, setOffice] = useState("US");
   const [saving, setSaving] = useState(false);
 
@@ -72,7 +80,7 @@ export default function NameSetup({ user, onNameSet }: Props) {
             <label className="block text-sm font-medium text-slate-700 mb-1 mt-4">
               Office
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {OFFICES.map((o) => (
                 <button
                   key={o.value}
