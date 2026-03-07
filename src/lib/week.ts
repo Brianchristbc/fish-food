@@ -27,7 +27,6 @@ export function localToUTC(tz: string, year: number, month: number, day: number,
   return new Date(fakeUTC.getTime() + diff);
 }
 
-// Get bounds for the current calendar week in the office's timezone
 export function getWeekBounds(office: string) {
   const tz = getTZ(office);
   const local = nowInTZ(tz);
@@ -40,7 +39,6 @@ export function getWeekBounds(office: string) {
   return { monday, friday };
 }
 
-// Get bounds for NEXT calendar week in the office's timezone
 export function getNextWeekBounds(office: string) {
   const tz = getTZ(office);
   const local = nowInTZ(tz);
@@ -63,6 +61,7 @@ function getISOWeek(date: Date): { weekNumber: number; year: number } {
 }
 
 export async function getCurrentWeek(office: string = "US") {
+  // Check for an open week
   const openWeek = await prisma.week.findFirst({
     where: { office, status: "OPEN" },
     orderBy: [{ year: "desc" }, { weekNumber: "desc" }],
@@ -76,37 +75,58 @@ export async function getCurrentWeek(office: string = "US") {
         where: { id: openWeek.id },
         data: { status: "CLOSED" },
       });
-      // Fall through to create next week
+      // Fall through
     } else {
       return openWeek;
     }
   }
 
-  // Try current calendar week first
+  // No open week. Check if we're within Mon 9am - Fri 4:50pm for this office.
   const now = new Date();
   const { monday, friday } = getWeekBounds(office);
+  const withinWorkWeek = now >= monday && now <= friday;
 
-  // If current week's deadline has passed, use next week's bounds
-  const useNext = now > friday;
-  const bounds = useNext ? getNextWeekBounds(office) : { monday, friday };
-  const weekDate = useNext ? new Date(bounds.monday) : now;
-  const { weekNumber, year } = getISOWeek(weekDate);
+  if (withinWorkWeek) {
+    // Auto-create a week for the current calendar week
+    const { weekNumber, year } = getISOWeek(now);
 
-  const existing = await prisma.week.findUnique({
-    where: { weekNumber_year_office: { weekNumber, year, office } },
+    const existing = await prisma.week.findUnique({
+      where: { weekNumber_year_office: { weekNumber, year, office } },
+    });
+
+    if (existing) return existing;
+
+    return await prisma.week.create({
+      data: {
+        weekNumber,
+        year,
+        office,
+        startsAt: monday,
+        endsAt: friday,
+        status: "OPEN",
+      },
+    });
+  }
+
+  // Outside work hours (weekend/after hours) — return the most recent week (read-only)
+  const latestWeek = await prisma.week.findFirst({
+    where: { office },
+    orderBy: [{ year: "desc" }, { weekNumber: "desc" }],
   });
 
-  if (existing) {
-    return existing;
-  }
+  if (latestWeek) return latestWeek;
+
+  // No weeks at all — create a placeholder for next week
+  const { weekNumber, year } = getISOWeek(now);
+  const nextBounds = getNextWeekBounds(office);
 
   return await prisma.week.create({
     data: {
-      weekNumber,
+      weekNumber: weekNumber + 1,
       year,
       office,
-      startsAt: bounds.monday,
-      endsAt: bounds.friday,
+      startsAt: nextBounds.monday,
+      endsAt: nextBounds.friday,
       status: "OPEN",
     },
   });
