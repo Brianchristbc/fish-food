@@ -94,7 +94,7 @@ export default function HowItWorks() {
         <div className="mt-8 text-center">
           <p className="text-xs text-slate-400">
             Product details are fetched by the{" "}
-            <a href="https://docs.tinyfish.ai/" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-600">
+            <a href="https://tinyfish.ai" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-600">
               TinyFish Web Agent
             </a>
           </p>

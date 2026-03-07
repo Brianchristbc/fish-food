@@ -1,6 +1,6 @@
 # Fish Food
 
-Weekly office purchase voting app powered by the [TinyFish Web Agent](https://docs.tinyfish.ai/).
+Weekly office purchase voting app powered by the [TinyFish Web Agent](https://tinyfish.ai).
 
 Every week, team members nominate an Amazon item they want the office to buy. Everyone votes, and the winning item gets purchased on Friday. Built for the TinyFish company hackathon.
 
