@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isTinyfishEmail, generateCode } from "@/lib/auth";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
 
 export async function POST(req: NextRequest) {
   const { email } = await req.json();
@@ -13,23 +19,22 @@ export async function POST(req: NextRequest) {
   }
 
   const code = generateCode();
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
   await prisma.authCode.create({
     data: { email: email.toLowerCase(), code, expiresAt },
   });
 
-  // Send email
   try {
-    await resend.emails.send({
-      from: "Fish Food <onboarding@resend.dev>",
+    await transporter.sendMail({
+      from: `"Fish Food" <${process.env.GMAIL_USER}>`,
       to: email.toLowerCase(),
       subject: "Your Fish Food login code",
       html: `<p>Your verification code is: <strong>${code}</strong></p><p>This code expires in 10 minutes.</p>`,
     });
-  } catch {
-    // In dev, log the code to console
-    console.log(`[DEV] Auth code for ${email}: ${code}`);
+  } catch (err) {
+    console.error("Email send failed:", err);
+    return NextResponse.json({ error: "Failed to send verification email. Please try again." }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });
