@@ -27,6 +27,7 @@ export function localToUTC(tz: string, year: number, month: number, day: number,
   return new Date(fakeUTC.getTime() + diff);
 }
 
+// Get bounds for the current calendar week in the office's timezone
 export function getWeekBounds(office: string) {
   const tz = getTZ(office);
   const local = nowInTZ(tz);
@@ -35,6 +36,19 @@ export function getWeekBounds(office: string) {
 
   const monday = localToUTC(tz, local.year, local.month, mondayDay, 9, 0);
   const friday = localToUTC(tz, local.year, local.month, mondayDay + 4, 16, 50);
+
+  return { monday, friday };
+}
+
+// Get bounds for NEXT calendar week in the office's timezone
+export function getNextWeekBounds(office: string) {
+  const tz = getTZ(office);
+  const local = nowInTZ(tz);
+  const diffToMonday = local.dayOfWeek === 0 ? -6 : 1 - local.dayOfWeek;
+  const nextMondayDay = local.day + diffToMonday + 7;
+
+  const monday = localToUTC(tz, local.year, local.month, nextMondayDay, 9, 0);
+  const friday = localToUTC(tz, local.year, local.month, nextMondayDay + 4, 16, 50);
 
   return { monday, friday };
 }
@@ -62,24 +76,27 @@ export async function getCurrentWeek(office: string = "US") {
         where: { id: openWeek.id },
         data: { status: "CLOSED" },
       });
-      // Fall through to create the next week
+      // Fall through to create next week
     } else {
       return openWeek;
     }
   }
 
-  // No open week — create one for the current calendar week
+  // Try current calendar week first
   const now = new Date();
-  const { weekNumber, year } = getISOWeek(now);
   const { monday, friday } = getWeekBounds(office);
+
+  // If current week's deadline has passed, use next week's bounds
+  const useNext = now > friday;
+  const bounds = useNext ? getNextWeekBounds(office) : { monday, friday };
+  const weekDate = useNext ? new Date(bounds.monday) : now;
+  const { weekNumber, year } = getISOWeek(weekDate);
 
   const existing = await prisma.week.findUnique({
     where: { weekNumber_year_office: { weekNumber, year, office } },
   });
 
   if (existing) {
-    // If it was closed (auto or manual) and we're still within bounds, return as-is
-    // If it's a new calendar week, this won't match so we'll create below
     return existing;
   }
 
@@ -88,8 +105,8 @@ export async function getCurrentWeek(office: string = "US") {
       weekNumber,
       year,
       office,
-      startsAt: monday,
-      endsAt: friday,
+      startsAt: bounds.monday,
+      endsAt: bounds.friday,
       status: "OPEN",
     },
   });
@@ -113,7 +130,6 @@ export async function getLastWeekWinner(office: string = "US") {
   return lastWeek.nominations.find((n) => n.id === lastWeek.winningNominationId) || null;
 }
 
-// Use the week's actual stored dates, not recalculated bounds
 export function isNominationOpen(weekStatus: string, startsAt: Date, endsAt: Date): boolean {
   if (weekStatus !== "OPEN") return false;
   const now = new Date();
