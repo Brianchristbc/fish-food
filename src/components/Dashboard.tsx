@@ -189,7 +189,10 @@ export default function Dashboard({ user, onLogout }: Props) {
           </div>
 
           {/* Desktop nav */}
-          <div className="hidden sm:flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-4">
+            <a href="/how-it-works" className="text-sm text-slate-400 hover:text-slate-600">
+              How it works
+            </a>
             <button
               onClick={() => setProfileOpen(true)}
               className="text-sm text-slate-600 hover:text-slate-900 font-medium"
@@ -253,6 +256,14 @@ export default function Dashboard({ user, onLogout }: Props) {
             >
               My Profile
             </button>
+
+            {/* How it works */}
+            <a
+              href="/how-it-works"
+              className="block py-2 text-sm text-slate-700 hover:text-slate-900"
+            >
+              How it works
+            </a>
 
             {/* Sign out */}
             <button
@@ -371,9 +382,9 @@ export default function Dashboard({ user, onLogout }: Props) {
             <NominationForm onNominated={refresh} />
           )}
 
-          {/* User nomination status — only on current week */}
+          {/* Nomination status */}
           {data.userNomination && data.isOpen && isOwnOffice && isViewingCurrentWeek && (
-            <div className={`mb-6 rounded-lg border px-4 py-3 text-sm ${
+            <div className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
               data.userNomination.status === "PENDING"
                 ? "border-amber-200 bg-amber-50 text-amber-700"
                 : data.userNomination.status === "FAILED"
@@ -387,20 +398,21 @@ export default function Dashboard({ user, onLogout }: Props) {
                 <>Nomination failed: {data.userNomination.errorMsg}</>
               )}
               {data.userNomination.status === "READY" && (
-                <>
-                  You nominated: <strong>{data.userNomination.productName}</strong>
-                  {votesRemaining > 0 && votableItems.length > 0 && (
-                    <span className="ml-2">
-                      — Vote on {votesRemaining} more item{votesRemaining > 1 ? "s" : ""}!
-                    </span>
-                  )}
-                  {votesRemaining > 0 && votableItems.length === 0 && (
-                    <span className="ml-2">
-                      — Come back to vote once others nominate items!
-                    </span>
-                  )}
-                </>
+                <>You nominated: <strong>{data.userNomination.productName}</strong></>
               )}
+            </div>
+          )}
+
+          {/* Voting status — separate banner */}
+          {data.isOpen && isOwnOffice && isViewingCurrentWeek && votesRemaining > 0 && readyNominations.length > 0 && (
+            <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+              You have <strong>{votesRemaining} vote{votesRemaining > 1 ? "s" : ""}</strong> remaining this week.
+              {!data.userNomination && " You can also nominate your own item above!"}
+            </div>
+          )}
+          {data.isOpen && isOwnOffice && isViewingCurrentWeek && votesRemaining === 0 && (
+            <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+              All votes cast! Come back Friday to see the winner.
             </div>
           )}
 
