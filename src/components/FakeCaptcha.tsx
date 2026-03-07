@@ -184,11 +184,21 @@ export default function FakeCaptcha() {
             />
           )}
 
+          {failed && (
+            <p className="mt-2 text-sm text-red-500 text-center font-medium">
+              Incorrect! Try again.
+            </p>
+          )}
+
           <button
             onClick={handleVerify}
-            className="mt-3 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className={`mt-3 w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition ${
+              failed
+                ? "bg-red-500 hover:bg-red-600 animate-[shake_0.3s_ease-in-out]"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
-            Verify
+            {failed ? "Try again" : "Verify"}
           </button>
         </>
       )}
