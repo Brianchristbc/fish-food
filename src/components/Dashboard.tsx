@@ -364,7 +364,7 @@ export default function Dashboard({ user, onLogout }: Props) {
                 </button>
               )}
               <div className="text-sm text-slate-500">
-                Deadline: {deadline.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}{" "}
+                Deadline: {deadline.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })},{" "}
                 {deadline.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}{" "}
                 ({OFFICES.find((o) => o.value === viewOffice)?.tz || "PT"})
               </div>
