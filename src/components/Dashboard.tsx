@@ -404,8 +404,8 @@ export default function Dashboard({ user, onLogout }: Props) {
             </div>
           )}
 
-          {/* Pending nominations — show fake captcha while waiting */}
-          {pendingNominations.length > 0 && (
+          {/* Fake captcha while any nomination (yours or others) is pending */}
+          {(pendingNominations.length > 0 || data.userNomination?.status === "PENDING") && (
             <div className="mb-4 space-y-4">
               <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 flex items-center gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -468,9 +468,7 @@ export default function Dashboard({ user, onLogout }: Props) {
                       isOwnOffice &&
                       data.isOpen &&
                       isViewingCurrentWeek &&
-                      !!data.userNomination &&
-                      data.userNomination.status === "READY" &&
-                      data.userNomination.id !== nom.id &&
+                      (!data.userNomination || data.userNomination.id !== nom.id) &&
                       !nom.userVoted &&
                       votesRemaining > 0
                     }

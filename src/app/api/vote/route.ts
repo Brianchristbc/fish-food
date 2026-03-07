@@ -20,16 +20,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Voting is closed for this week" }, { status: 400 });
   }
 
-  // Check if user has a nomination this week (must nominate to participate)
+  // Can't vote for own nomination (if they have one)
   const userNomination = await prisma.nomination.findUnique({
     where: { userId_weekId: { userId: session.userId, weekId: week.id } },
   });
-  if (!userNomination) {
-    return NextResponse.json({ error: "You must nominate an item before voting" }, { status: 400 });
-  }
-
-  // Can't vote for own nomination
-  if (nominationId === userNomination.id) {
+  if (userNomination && nominationId === userNomination.id) {
     return NextResponse.json({ error: "You can't manually vote for your own item" }, { status: 400 });
   }
 
