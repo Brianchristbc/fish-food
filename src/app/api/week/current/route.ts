@@ -81,6 +81,6 @@ export async function GET(req: NextRequest) {
     userManualVotesUsed: userVotes.length,
     userOffice: user?.office || "US",
     viewingOffice: viewOffice,
-    isOpen: isNominationOpen(week.status, week.office),
+    isOpen: isNominationOpen(week.status, week.startsAt, week.endsAt),
   });
 }

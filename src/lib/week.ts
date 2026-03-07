@@ -19,7 +19,7 @@ function nowInTZ(tz: string) {
   return { year, month, day, hour, minute, dayOfWeek };
 }
 
-function localToUTC(tz: string, year: number, month: number, day: number, hour: number, minute: number): Date {
+export function localToUTC(tz: string, year: number, month: number, day: number, hour: number, minute: number): Date {
   const fakeUTC = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
   const utcStr = fakeUTC.toLocaleString("en-US", { timeZone: "UTC" });
   const tzStr = fakeUTC.toLocaleString("en-US", { timeZone: tz });
@@ -27,14 +27,14 @@ function localToUTC(tz: string, year: number, month: number, day: number, hour: 
   return new Date(fakeUTC.getTime() + diff);
 }
 
-function getWeekBounds(office: string) {
+export function getWeekBounds(office: string) {
   const tz = getTZ(office);
   const local = nowInTZ(tz);
   const diffToMonday = local.dayOfWeek === 0 ? -6 : 1 - local.dayOfWeek;
   const mondayDay = local.day + diffToMonday;
 
-  const monday = localToUTC(tz, local.year, local.month, mondayDay, 9, 0);       // Mon 9:00am local
-  const friday = localToUTC(tz, local.year, local.month, mondayDay + 4, 16, 50);  // Fri 4:50pm local
+  const monday = localToUTC(tz, local.year, local.month, mondayDay, 9, 0);
+  const friday = localToUTC(tz, local.year, local.month, mondayDay + 4, 16, 50);
 
   return { monday, friday };
 }
@@ -57,14 +57,18 @@ export async function getCurrentWeek(office: string = "US") {
   if (openWeek) {
     const now = new Date();
     if (now > new Date(openWeek.endsAt)) {
-      return await prisma.week.update({
+      // Auto-close expired week
+      await prisma.week.update({
         where: { id: openWeek.id },
         data: { status: "CLOSED" },
       });
+      // Fall through to create the next week
+    } else {
+      return openWeek;
     }
-    return openWeek;
   }
 
+  // No open week — create one for the current calendar week
   const now = new Date();
   const { weekNumber, year } = getISOWeek(now);
   const { monday, friday } = getWeekBounds(office);
@@ -74,6 +78,8 @@ export async function getCurrentWeek(office: string = "US") {
   });
 
   if (existing) {
+    // If it was closed (auto or manual) and we're still within bounds, return as-is
+    // If it's a new calendar week, this won't match so we'll create below
     return existing;
   }
 
@@ -107,9 +113,9 @@ export async function getLastWeekWinner(office: string = "US") {
   return lastWeek.nominations.find((n) => n.id === lastWeek.winningNominationId) || null;
 }
 
-export function isNominationOpen(weekStatus: string, office: string = "US"): boolean {
+// Use the week's actual stored dates, not recalculated bounds
+export function isNominationOpen(weekStatus: string, startsAt: Date, endsAt: Date): boolean {
   if (weekStatus !== "OPEN") return false;
   const now = new Date();
-  const { monday, friday } = getWeekBounds(office);
-  return now >= monday && now <= friday;
+  return now >= new Date(startsAt) && now <= new Date(endsAt);
 }

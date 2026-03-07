@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
+import { getWeekBounds } from "@/lib/week";
 
 export async function POST() {
   const admin = await requireAdmin();
@@ -8,6 +9,7 @@ export async function POST() {
 
   const office = admin.office;
 
+  // Close any open week
   const openWeek = await prisma.week.findFirst({
     where: { office, status: "OPEN" },
   });
@@ -19,6 +21,7 @@ export async function POST() {
     });
   }
 
+  // Find the latest week to increment the number
   const latestWeek = await prisma.week.findFirst({
     where: { office },
     orderBy: [{ year: "desc" }, { weekNumber: "desc" }],
@@ -27,12 +30,8 @@ export async function POST() {
   const nextWeekNum = latestWeek ? latestWeek.weekNumber + 1 : 1;
   const year = latestWeek ? latestWeek.year : new Date().getFullYear();
 
-  const now = new Date();
-  const monday = new Date(now);
-  monday.setHours(9, 0, 0, 0);
-  const friday = new Date(now);
-  friday.setDate(now.getDate() + 4);
-  friday.setHours(16, 50, 0, 0);
+  // Use proper timezone-aware bounds
+  const { monday, friday } = getWeekBounds(office);
 
   const newWeek = await prisma.week.create({
     data: {

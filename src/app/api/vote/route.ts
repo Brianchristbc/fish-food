@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
   const week = await getCurrentWeek(user?.office || "US");
 
-  if (!isNominationOpen(week.status, user?.office || "US")) {
+  if (!isNominationOpen(week.status, week.startsAt, week.endsAt)) {
     return NextResponse.json({ error: "Voting is closed for this week" }, { status: 400 });
   }
 
@@ -80,7 +80,7 @@ export async function DELETE(req: NextRequest) {
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
   const week = await getCurrentWeek(user?.office || "US");
 
-  if (!isNominationOpen(week.status, user?.office || "US")) {
+  if (!isNominationOpen(week.status, week.startsAt, week.endsAt)) {
     return NextResponse.json({ error: "Voting is closed for this week" }, { status: 400 });
   }
 
