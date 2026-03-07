@@ -5,6 +5,7 @@ import NominationForm from "./NominationForm";
 import ItemCard from "./ItemCard";
 import PastResults from "./PastResults";
 import SlackRally from "./SlackRally";
+import ProfileModal from "./ProfileModal";
 
 interface User {
   id: string;
@@ -74,6 +75,8 @@ export default function Dashboard({ user, onLogout }: Props) {
   const [viewOffice, setViewOffice] = useState(user.office);
   const [selectedWeekId, setSelectedWeekId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval>>(null);
 
   const refresh = useCallback(async () => {
@@ -165,8 +168,8 @@ export default function Dashboard({ user, onLogout }: Props) {
             <img src="/brand/fish.png" alt="TinyFish" className="h-8 w-8" />
             <h1 className="text-lg font-bold text-slate-900">Fish Food</h1>
 
-            {/* Office selector */}
-            <div className="relative ml-2">
+            {/* Office selector — hidden on small screens, shown in menu */}
+            <div className="relative ml-2 hidden sm:block">
               <select
                 value={viewOffice}
                 onChange={(e) => setViewOffice(e.target.value)}
@@ -184,8 +187,14 @@ export default function Dashboard({ user, onLogout }: Props) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-slate-500">{user.name}</span>
+          {/* Desktop nav */}
+          <div className="hidden sm:flex items-center gap-3">
+            <button
+              onClick={() => setProfileOpen(true)}
+              className="text-sm text-slate-600 hover:text-slate-900 font-medium"
+            >
+              {user.name}
+            </button>
             <button
               onClick={handleLogout}
               className="text-sm text-slate-400 hover:text-slate-600"
@@ -193,8 +202,70 @@ export default function Dashboard({ user, onLogout }: Props) {
               Sign out
             </button>
           </div>
+
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="sm:hidden p-1 text-slate-500 hover:text-slate-700"
+          >
+            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              {menuOpen ? (
+                <><line x1="6" y1="6" x2="18" y2="18" /><line x1="6" y1="18" x2="18" y2="6" /></>
+              ) : (
+                <><line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="17" x2="20" y2="17" /></>
+              )}
+            </svg>
+          </button>
         </div>
       </header>
+
+      {/* Mobile slide-out menu */}
+      {menuOpen && (
+        <div className="sm:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setMenuOpen(false)} />
+          <div className="absolute right-0 top-0 h-full w-64 bg-white shadow-lg p-5 flex flex-col">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-base font-bold text-slate-900">Menu</h2>
+              <button onClick={() => setMenuOpen(false)} className="text-slate-400 hover:text-slate-600 text-xl">
+                &times;
+              </button>
+            </div>
+
+            {/* Office selector */}
+            <label className="text-xs font-medium text-slate-500 mb-1">Office</label>
+            <select
+              value={viewOffice}
+              onChange={(e) => { setViewOffice(e.target.value); setMenuOpen(false); }}
+              className="mb-4 rounded-lg border border-slate-200 bg-slate-50 py-2 px-3 text-sm text-slate-700"
+            >
+              {OFFICES.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.flag} {o.label}
+                </option>
+              ))}
+            </select>
+
+            {/* Profile */}
+            <button
+              onClick={() => { setProfileOpen(true); setMenuOpen(false); }}
+              className="text-left py-2 text-sm font-medium text-slate-700 hover:text-slate-900 border-t border-slate-100 pt-3"
+            >
+              My Profile
+            </button>
+
+            {/* Sign out */}
+            <button
+              onClick={() => { handleLogout(); setMenuOpen(false); }}
+              className="text-left py-2 text-sm text-red-500 hover:text-red-700 mt-auto"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Profile modal */}
+      {profileOpen && <ProfileModal onClose={() => setProfileOpen(false)} />}
 
       {/* Viewing other office banner */}
       {!isOwnOffice && (
