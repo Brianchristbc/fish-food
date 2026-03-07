@@ -372,21 +372,21 @@ export default function Dashboard({ user, onLogout }: Props) {
             </div>
           </div>
 
-          {/* Rally button — only on current open week */}
-          {data.isOpen && isOwnOffice && isViewingCurrentWeek && data.userNomination && readyNominations.length < 3 && (
+          {/* Rally button — only when user has a READY nomination */}
+          {data.isOpen && isOwnOffice && isViewingCurrentWeek && data.userNomination?.status === "READY" && readyNominations.length < 3 && (
             <SlackRally nominationCount={readyNominations.length} />
           )}
 
           {/* Nomination form — show when no nomination or failed */}
           {data.isOpen && isOwnOffice && isViewingCurrentWeek && (!data.userNomination || data.userNomination.status === "FAILED") && (
-            <>
+            <div className="mb-4">
               {data.userNomination?.status === "FAILED" && (
                 <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   Previous nomination failed: {data.userNomination.errorMsg}. Try a different item below.
                 </div>
               )}
               <NominationForm onNominated={refresh} />
-            </>
+            </div>
           )}
 
           {/* Nomination status — PENDING or READY */}
@@ -437,10 +437,10 @@ export default function Dashboard({ user, onLogout }: Props) {
             </div>
           )}
 
-          {/* Failed nominations */}
-          {failedNominations.length > 0 && (
+          {/* Failed nominations — only show other people's failures, not your own (handled above) */}
+          {failedNominations.filter((n) => data.userNomination?.id !== n.id).length > 0 && (
             <div className="mb-4 space-y-2">
-              {failedNominations.map((nom) => (
+              {failedNominations.filter((n) => data.userNomination?.id !== n.id).map((nom) => (
                 <div
                   key={nom.id}
                   className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
