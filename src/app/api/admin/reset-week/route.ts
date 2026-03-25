@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
+import { pickWinnerAndClose } from "@/lib/week";
 
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin();
@@ -15,10 +16,7 @@ export async function POST(req: NextRequest) {
   });
 
   for (const w of openWeeks) {
-    await prisma.week.update({
-      where: { id: w.id },
-      data: { status: "CLOSED" },
-    });
+    await pickWinnerAndClose(w.id);
   }
 
   // Find the latest week to determine the next week number

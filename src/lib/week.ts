@@ -59,11 +59,8 @@ export async function getCurrentWeek(office: string = "US") {
   if (openWeek) {
     const now = new Date();
     if (now > new Date(openWeek.endsAt)) {
-      // Auto-close expired week
-      await prisma.week.update({
-        where: { id: openWeek.id },
-        data: { status: "CLOSED" },
-      });
+      // Auto-close expired week and pick a winner
+      await pickWinnerAndClose(openWeek.id);
       // Fall through to create next week immediately
     } else {
       return openWeek;
@@ -121,6 +118,38 @@ export async function getLastWeekWinner(office: string = "US") {
   if (!lastWeek || !lastWeek.winningNominationId) return null;
 
   return lastWeek.nominations.find((n) => n.id === lastWeek.winningNominationId) || null;
+}
+
+export async function pickWinnerAndClose(weekId: string) {
+  const week = await prisma.week.findUnique({
+    where: { id: weekId },
+    include: {
+      nominations: {
+        where: { status: "READY" },
+        include: { votes: true },
+      },
+    },
+  });
+
+  if (!week) return;
+
+  let winningNominationId: string | null = null;
+
+  if (week.nominations.length > 0) {
+    const withCounts = week.nominations.map((n) => ({
+      ...n,
+      voteCount: n.votes.length,
+    }));
+    const maxVotes = Math.max(...withCounts.map((n) => n.voteCount));
+    const top = withCounts.filter((n) => n.voteCount === maxVotes);
+    const winner = top[Math.floor(Math.random() * top.length)];
+    winningNominationId = winner.id;
+  }
+
+  await prisma.week.update({
+    where: { id: weekId },
+    data: { status: "CLOSED", winningNominationId },
+  });
 }
 
 export function isNominationOpen(weekStatus: string, startsAt: Date, endsAt: Date): boolean {
